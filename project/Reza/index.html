@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Penjadwalan CPU</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #d904ff;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #d904ff;
+            margin-bottom: 30px;
+        }
+        
+        .input-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+        
+        .process-inputs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .input-group {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #2980b9;
+        }
+        
+        .results {
+            margin-top: 30px;
+        }
+        
+        .algorithm-section {
+            margin-bottom: 30px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .algorithm-header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 10px 15px;
+            font-weight: bold;
+        }
+        
+        .algorithm-content {
+            padding: 15px;
+        }
+        
+        .gantt-chart {
+            display: flex;
+            margin: 20px 0;
+            overflow-x: auto;
+        }
+        
+        .gantt-item {
+            min-width: 60px;
+            text-align: center;
+            padding: 10px 5px;
+            border: 1px solid #ddd;
+            position: relative;
+        }
+        
+        .gantt-item.process {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        .gantt-item.idle {
+            background-color: #f1f1f1;
+        }
+        
+        .gantt-time {
+            position: absolute;
+            bottom: -20px;
+            left: 0;
+            right: 0;
+            font-size: 12px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        
+        th {
+            background-color: #f2f2f2;
+        }
+        
+        .metrics {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 15px;
+        }
+        
+        .metric-card {
+            flex: 1;
+            min-width: 150px;
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        
+        .metric-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .process-color {
+            display: inline-block;
+            width: 15px;
+            height: 15px;
+            margin-right: 5px;
+            vertical-align: middle;
+        }
+        
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin: 15px 0;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+        }
+        
+        .time-quantum-info {
+            background-color: #e3f2fd;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .time-quantum-info span {
+            font-weight: bold;
+            margin-left: 5px;
+            color: #0d47a1;
+        }
+        
+        @media (max-width: 768px) {
+            .process-inputs {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Simulator Penjadwalan CPU</h1>
+        
+        <div class="input-section">
+            <h2>Input Proses</h2>
+            <div id="processes-container">
+                <div class="process-inputs">
+                    <div class="input-group">
+                        <label for="process-count">Jumlah Proses:</label>
+                        <input type="number" id="process-count" min="1" max="10" value="3">
+                    </div>
+                    <div class="input-group">
+                        <label for="time-quantum">Quantum Time (Round Robin):</label>
+                        <input type="number" id="time-quantum" min="1" value="2">
+                    </div>
+                </div>
+                
+                <div id="process-details">
+                    <!-- Process inputs will be generated here -->
+                </div>
+            </div>
+            
+            <button id="calculate-btn">Hitung Penjadwalan</button>
+        </div>
+        
+        <div class="results">
+            <h2>Hasil Penjadwalan</h2>
+            
+            <div id="fifo-results" class="algorithm-section">
+                <div class="algorithm-header">First-In First-Out (FIFO)</div>
+                <div class="algorithm-content">
+                    <p>Menunggu perhitungan...</p>
+                </div>
+            </div>
+            
+            <div id="rr-results" class="algorithm-section">
+                <div class="algorithm-header">Round Robin</div>
+                <div class="algorithm-content">
+                    <p>Menunggu perhitungan...</p>
+                </div>
+            </div>
+            
+            <div id="srf-results" class="algorithm-section">
+                <div class="algorithm-header">Shortest Remaining First (SRF)</div>
+                <div class="algorithm-content">
+                    <p>Menunggu perhitungan...</p>
+                </div>
+            </div>
+            
+            <div id="sjf-results" class="algorithm-section">
+                <div class="algorithm-header">Shortest Job First (SJF)</div>
+                <div class="algorithm-content">
+                    <p>Menunggu perhitungan...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const processCountInput = document.getElementById('process-count');
+            const processDetailsContainer = document.getElementById('process-details');
+            const calculateBtn = document.getElementById('calculate-btn');
+            const timeQuantumInput = document.getElementById('time-quantum');
+            
+            // Generate process input fields based on process count
+            processCountInput.addEventListener('change', generateProcessInputs);
+            
+            // Generate initial process inputs
+            generateProcessInputs();
+            
+            // Calculate scheduling when button is clicked
+            calculateBtn.addEventListener('click', calculateScheduling);
+            
+            function generateProcessInputs() {
+                const processCount = parseInt(processCountInput.value);
+                let html = '<h3>Detail Proses</h3>';
+                
+                // Generate color palette for processes
+                const colors = [
+                    '#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', 
+                    '#1abc9c', '#d35400', '#34495e', '#7f8c8d', '#c0392b'
+                ];
+                
+                for (let i = 0; i < processCount; i++) {
+                    html += `
+                        <div class="process-inputs">
+                            <div class="input-group">
+                                <label for="process-name-${i}">Nama Proses ${i+1}:</label>
+                                <input type="text" id="process-name-${i}" value="P${i+1}">
+                            </div>
+                            <div class="input-group">
+                                <label for="arrival-time-${i}">Waktu Kedatangan:</label>
+                                <input type="number" id="arrival-time-${i}" min="0" value="${i}">
+                            </div>
+                            <div class="input-group">
+                                <label for="burst-time-${i}">CPU Burst Time:</label>
+                                <input type="number" id="burst-time-${i}" min="1" value="${Math.floor(Math.random() * 10) + 1}">
+                            </div>
+                            <div class="input-group">
+                                <label>Warna:</label>
+                                <div style="background-color: ${colors[i]}; width: 100%; height: 30px;"></div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                processDetailsContainer.innerHTML = html;
+            }
+            
+            function calculateScheduling() {
+                const processCount = parseInt(processCountInput.value);
+                const timeQuantum = parseInt(timeQuantumInput.value);
+                
+                // Validate time quantum
+                if (timeQuantum < 1) {
+                    alert("Quantum Time harus lebih besar dari 0");
+                    timeQuantumInput.focus();
+                    return;
+                }
+                
+                // Collect process data
+                const processes = [];
+                const colors = [
+                    '#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', 
+                    '#1abc9c', '#d35400', '#34495e', '#7f8c8d', '#c0392b'
+                ];
+                
+                for (let i = 0; i < processCount; i++) {
+                    processes.push({
+                        name: document.getElementById(`process-name-${i}`).value,
+                        arrivalTime: parseInt(document.getElementById(`arrival-time-${i}`).value),
+                        burstTime: parseInt(document.getElementById(`burst-time-${i}`).value),
+                        color: colors[i]
+                    });
+                }
+                
+                // Calculate each scheduling algorithm
+                const fifoResults = calculateFIFO([...processes]);
+                const rrResults = calculateRoundRobin([...processes], timeQuantum);
+                const srfResults = calculateSRF([...processes]);
+                const sjfResults = calculateSJF([...processes]);
+                
+                // Display results
+                displayResults('fifo-results', 'First-In First-Out (FIFO)', fifoResults, processes);
+                displayResults('rr-results', 'Round Robin (Quantum Time: ' + timeQuantum + ')', rrResults, processes, timeQuantum);
+                displayResults('srf-results', 'Shortest Remaining First (SRF)', srfResults, processes);
+                displayResults('sjf-results', 'Shortest Job First (SJF)', sjfResults, processes);
+            }
+            
+            function calculateFIFO(processes) {
+                // Sort processes by arrival time
+                processes.sort((a, b) => a.arrivalTime - b.arrivalTime);
+                
+                let currentTime = 0;
+                const ganttChart = [];
+                const processStats = {};
+                
+                processes.forEach(process => {
+                    // Handle idle time if needed
+                    if (currentTime < process.arrivalTime) {
+                        ganttChart.push({
+                            type: 'idle',
+                            start: currentTime,
+                            end: process.arrivalTime
+                        });
+                        currentTime = process.arrivalTime;
+                    }
+                    
+                    // Add process execution
+                    ganttChart.push({
+                        type: 'process',
+                        name: process.name,
+                        start: currentTime,
+                        end: currentTime + process.burstTime
+                    });
+                    
+                    // Calculate process statistics
+                    processStats[process.name] = {
+                        turnaroundTime: (currentTime + process.burstTime) - process.arrivalTime,
+                        waitingTime: currentTime - process.arrivalTime,
+                        responseTime: currentTime - process.arrivalTime
+                    };
+                    
+                    currentTime += process.burstTime;
+                });
+                
+                return {
+                    ganttChart,
+                    processStats,
+                    averageMetrics: calculateAverageMetrics(processStats)
+                };
+            }
+            
+            function calculateRoundRobin(processes, quantum) {
+                // Sort processes by arrival time
+                processes.sort((a, b) => a.arrivalTime - b.arrivalTime);
+                
+                let currentTime = 0;
+                const ganttChart = [];
+                const processStats = {};
+                const queue = [];
+                const remainingTime = {};
+                const firstRun = {};
+                
+                // Initialize remaining times and first run flags
+                processes.forEach(process => {
+                    remainingTime[process.name] = process.burstTime;
+                    firstRun[process.name] = false;
+                    processStats[process.name] = {
+                        waitingTime: 0,
+                        responseTime: -1 // Not set yet
+                    };
+                });
+                
+                let processIndex = 0;
+                let completedProcesses = 0;
+                
+                while (completedProcesses < processes.length) {
+                    // Add arriving processes to the queue
+                    while (processIndex < processes.length && processes[processIndex].arrivalTime <= currentTime) {
+                        queue.push(processes[processIndex].name);
+                        processIndex++;
+                    }
+                    
+                    if (queue.length === 0) {
+                        // No processes ready, advance time
+                        const nextArrival = processIndex < processes.length ? processes[processIndex].arrivalTime : Infinity;
+                        const idleTime = nextArrival - currentTime;
+                        
+                        ganttChart.push({
+                            type: 'idle',
+                            start: currentTime,
+                            end: nextArrival
+                        });
+                        
+                        currentTime = nextArrival;
+                        continue;
+                    }
+                    
+                    // Get next process from queue
+                    const currentProcessName = queue.shift();
+                    const currentProcess = processes.find(p => p.name === currentProcessName);
+                    const executionTime = Math.min(quantum, remainingTime[currentProcessName]);
+                    
+                    // Record response time if this is the first run
+                    if (!firstRun[currentProcessName]) {
+                        processStats[currentProcessName].responseTime = currentTime - currentProcess.arrivalTime;
+                        firstRun[currentProcessName] = true;
+                    }
+                    
+                    // Add to Gantt chart
+                    ganttChart.push({
+                        type: 'process',
+                        name: currentProcessName,
+                        start: currentTime,
+                        end: currentTime + executionTime
+                    });
+                    
+                    // Update remaining time
+                    remainingTime[currentProcessName] -= executionTime;
+                    
+                    // Update waiting times for other processes in queue
+                    queue.forEach(p => {
+                        processStats[p].waitingTime += executionTime;
+                    });
+                    
+                    // Check if process is completed
+                    if (remainingTime[currentProcessName] === 0) {
+                        completedProcesses++;
+                        processStats[currentProcessName].turnaroundTime = currentTime + executionTime - currentProcess.arrivalTime;
+                    } else {
+                        // Add arriving processes during this execution
+                        while (processIndex < processes.length && processes[processIndex].arrivalTime <= currentTime + executionTime) {
+                            queue.push(processes[processIndex].name);
+                            processIndex++;
+                        }
+                        
+                        // Re-add current process to queue if not finished
+                        queue.push(currentProcessName);
+                    }
+                    
+                    currentTime += executionTime;
+                }
+                
+                // Calculate average metrics
+                return {
+                    ganttChart,
+                    processStats,
+                    averageMetrics: calculateAverageMetrics(processStats)
+                };
+            }
+            
+            function calculateSRF(processes) {
+                // Sort processes by arrival time
+                processes.sort((a, b) => a.arrivalTime - b.arrivalTime);
+                
+                let currentTime = 0;
+                const ganttChart = [];
+                const processStats = {};
+                const remainingTime = {};
+                const firstRun = {};
+                
+                // Initialize remaining times and first run flags
+                processes.forEach(process => {
+                    remainingTime[process.name] = process.burstTime;
+                    firstRun[process.name] = false;
+                    processStats[process.name] = {
+                        waitingTime: 0,
+                        responseTime: -1 // Not set yet
+                    };
+                });
+                
+                let processIndex = 0;
+                let completedProcesses = 0;
+                
+                while (completedProcesses < processes.length) {
+                    // Add arriving processes to consideration
+                    while (processIndex < processes.length && processes[processIndex].arrivalTime <= currentTime) {
+                        processIndex++;
+                    }
+                    
+                    const availableProcesses = processes
+                        .slice(0, processIndex)
+                        .filter(p => remainingTime[p.name] > 0);
+                    
+                    if (availableProcesses.length === 0) {
+                        // No processes ready, advance time
+                        const nextArrival = processIndex < processes.length ? processes[processIndex].arrivalTime : Infinity;
+                        const idleTime = nextArrival - currentTime;
+                        
+                        ganttChart.push({
+                            type: 'idle',
+                            start: currentTime,
+                            end: nextArrival
+                        });
+                        
+                        currentTime = nextArrival;
+                        continue;
+                    }
+                    
+                    // Find process with shortest remaining time
+                    availableProcesses.sort((a, b) => remainingTime[a.name] - remainingTime[b.name]);
+                    const currentProcess = availableProcesses[0];
+                    
+                    // Record response time if this is the first run
+                    if (!firstRun[currentProcess.name]) {
+                        processStats[currentProcess.name].responseTime = currentTime - currentProcess.arrivalTime;
+                        firstRun[currentProcess.name] = true;
+                    }
+                    
+                    // Determine next event time (either process completes or new process arrives)
+                    const nextArrival = processIndex < processes.length ? processes[processIndex].arrivalTime : Infinity;
+                    const executionTime = Math.min(
+                        remainingTime[currentProcess.name],
+                        nextArrival - currentTime
+                    );
+                    
+                    // Add to Gantt chart
+                    ganttChart.push({
+                        type: 'process',
+                        name: currentProcess.name,
+                        start: currentTime,
+                        end: currentTime + executionTime
+                    });
+                    
+                    // Update remaining time
+                    remainingTime[currentProcess.name] -= executionTime;
+                    
+                    // Update waiting times for other available processes
+                    availableProcesses.slice(1).forEach(p => {
+                        processStats[p.name].waitingTime += executionTime;
+                    });
+                    
+                    // Check if process is completed
+                    if (remainingTime[currentProcess.name] === 0) {
+                        completedProcesses++;
+                        processStats[currentProcess.name].turnaroundTime = currentTime + executionTime - currentProcess.arrivalTime;
+                    }
+                    
+                    currentTime += executionTime;
+                }
+                
+                // Calculate average metrics
+                return {
+                    ganttChart,
+                    processStats,
+                    averageMetrics: calculateAverageMetrics(processStats)
+                };
+            }
+            
+            function calculateSJF(processes) {
+                // Sort processes by arrival time
+                processes.sort((a, b) => a.arrivalTime - b.arrivalTime);
+                
+                let currentTime = 0;
+                const ganttChart = [];
+                const processStats = {};
+                const remainingTime = {};
+                const firstRun = {};
+                
+                // Initialize remaining times and first run flags
+                processes.forEach(process => {
+                    remainingTime[process.name] = process.burstTime;
+                    firstRun[process.name] = false;
+                    processStats[process.name] = {
+                        waitingTime: 0,
+                        responseTime: -1 // Not set yet
+                    };
+                });
+                
+                let processIndex = 0;
+                let completedProcesses = 0;
+                
+                while (completedProcesses < processes.length) {
+                    // Add arriving processes to consideration
+                    while (processIndex < processes.length && processes[processIndex].arrivalTime <= currentTime) {
+                        processIndex++;
+                    }
+                    
+                    const availableProcesses = processes
+                        .slice(0, processIndex)
+                        .filter(p => remainingTime[p.name] > 0);
+                    
+                    if (availableProcesses.length === 0) {
+                        // No processes ready, advance time
+                        const nextArrival = processIndex < processes.length ? processes[processIndex].arrivalTime : Infinity;
+                        const idleTime = nextArrival - currentTime;
+                        
+                        ganttChart.push({
+                            type: 'idle',
+                            start: currentTime,
+                            end: nextArrival
+                        });
+                        
+                        currentTime = nextArrival;
+                        continue;
+                    }
+                    
+                    // Find process with shortest burst time (non-preemptive)
+                    availableProcesses.sort((a, b) => a.burstTime - b.burstTime);
+                    const currentProcess = availableProcesses[0];
+                    
+                    // Record response time if this is the first run
+                    if (!firstRun[currentProcess.name]) {
+                        processStats[currentProcess.name].responseTime = currentTime - currentProcess.arrivalTime;
+                        firstRun[currentProcess.name] = true;
+                    }
+                    
+                    // Execute entire process (non-preemptive)
+                    const executionTime = remainingTime[currentProcess.name];
+                    
+                    // Add to Gantt chart
+                    ganttChart.push({
+                        type: 'process',
+                        name: currentProcess.name,
+                        start: currentTime,
+                        end: currentTime + executionTime
+                    });
+                    
+                    // Update remaining time
+                    remainingTime[currentProcess.name] = 0;
+                    
+                    // Update waiting times for other available processes
+                    availableProcesses.slice(1).forEach(p => {
+                        processStats[p.name].waitingTime += executionTime;
+                    });
+                    
+                    // Process is completed
+                    completedProcesses++;
+                    processStats[currentProcess.name].turnaroundTime = currentTime + executionTime - currentProcess.arrivalTime;
+                    
+                    currentTime += executionTime;
+                }
+                
+                // Calculate average metrics
+                return {
+                    ganttChart,
+                    processStats,
+                    averageMetrics: calculateAverageMetrics(processStats)
+                };
+            }
+            
+            function calculateAverageMetrics(processStats) {
+                const processNames = Object.keys(processStats);
+                const total = processNames.length;
+                
+                const averages = {
+                    turnaroundTime: 0,
+                    waitingTime: 0,
+                    responseTime: 0
+                };
+                
+                processNames.forEach(name => {
+                    averages.turnaroundTime += processStats[name].turnaroundTime;
+                    averages.waitingTime += processStats[name].waitingTime;
+                    averages.responseTime += processStats[name].responseTime;
+                });
+                
+                averages.turnaroundTime = (averages.turnaroundTime / total).toFixed(2);
+                averages.waitingTime = (averages.waitingTime / total).toFixed(2);
+                averages.responseTime = (averages.responseTime / total).toFixed(2);
+                
+                return averages;
+            }
+            
+            function displayResults(elementId, algorithmName, results, processes, timeQuantum = null) {
+                const container = document.getElementById(elementId);
+                const content = container.querySelector('.algorithm-content');
+                
+                // Update algorithm header
+                container.querySelector('.algorithm-header').textContent = algorithmName;
+                
+                // Create process legend
+                let legendHtml = '<div class="legend">';
+                processes.forEach(process => {
+                    legendHtml += `
+                        <div class="legend-item">
+                            <span class="process-color" style="background-color: ${process.color};"></span>
+                            <span>${process.name}</span>
+                        </div>
+                    `;
+                });
+                legendHtml += '</div>';
+                
+                // Show time quantum info for Round Robin
+                if (timeQuantum !== null) {
+                    legendHtml += `
+                        <div class="time-quantum-info">
+                            <i>Quantum Time yang digunakan:</i> <span>${timeQuantum}</span>
+                        </div>
+                    `;
+                }
+                
+                // Create Gantt chart
+                let ganttHtml = '<h3>Gantt Chart</h3><div class="gantt-chart">';
+                results.ganttChart.forEach(item => {
+                    if (item.type === 'idle') {
+                        ganttHtml += `
+                            <div class="gantt-item idle" style="width: ${(item.end - item.start) * 30}px;">
+                                Idle
+                                <div class="gantt-time">${item.start}-${item.end}</div>
+                            </div>
+                        `;
+                    } else {
+                        const process = processes.find(p => p.name === item.name);
+                        ganttHtml += `
+                            <div class="gantt-item process" style="width: ${(item.end - item.start) * 30}px; background-color: ${process.color}">
+                                ${item.name}
+                                <div class="gantt-time">${item.start}-${item.end}</div>
+                            </div>
+                        `;
+                    }
+                });
+                ganttHtml += '</div>';
+                
+                // Create process table
+                let tableHtml = `
+                    <h3>Detail Proses</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Proses</th>
+                                <th>Waktu Kedatangan</th>
+                                <th>Burst Time</th>
+                                <th>Waktu Tunggu</th>
+                                <th>Turnaround Time</th>
+                                <th>Response Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                
+                processes.forEach(process => {
+                    const stats = results.processStats[process.name];
+                    tableHtml += `
+                        <tr>
+                            <td>${process.name}</td>
+                            <td>${process.arrivalTime}</td>
+                            <td>${process.burstTime}</td>
+                            <td>${stats.waitingTime}</td>
+                            <td>${stats.turnaroundTime}</td>
+                            <td>${stats.responseTime}</td>
+                        </tr>
+                    `;
+                });
+                
+                tableHtml += `
+                        </tbody>
+                    </table>
+                `;
+                
+                // Create metrics cards
+                const metrics = results.averageMetrics;
+                let metricsHtml = `
+                    <h3>Rata-rata Metrik</h3>
+                    <div class="metrics">
+                        <div class="metric-card">
+                            <div>Average Turnaround Time</div>
+                            <div class="metric-value">${metrics.turnaroundTime}</div>
+                        </div>
+                        <div class="metric-card">
+                            <div>Average Waiting Time</div>
+                            <div class="metric-value">${metrics.waitingTime}</div>
+                        </div>
+                        <div class="metric-card">
+                            <div>Average Response Time</div>
+                            <div class="metric-value">${metrics.responseTime}</div>
+                        </div>
+                    </div>
+                `;
+                
+                // Combine all HTML
+                content.innerHTML = `
+                    ${legendHtml}
+                    ${ganttHtml}
+                    ${tableHtml}
+                    ${metricsHtml}
+                `;
+            }
+        });
+    </script>
+</body>
+</html>
